@@ -370,6 +370,15 @@ if st.button("🧮 Contar flash", type="primary"):
             line1, line2, pts_top, pts_otros, n_top
         )
 
+        # Más participantes de los esperados en la línea top (cuando hay segunda línea)
+        all_line1 = parse_participants_from_line(line1)
+        if len(all_line1) > n_top:
+            st.warning(
+                f"⚠️ Ronda {r}: Se detectaron **{len(all_line1)} participantes** en la línea "
+                f"de top (se esperaban máximo {n_top}). Solo se tomaron los primeros {n_top}. "
+                f"Revisa que la ronda esté bien formateada."
+            )
+
         # Participante en top y en otros a la vez
         if line2:
             others_parsed = parse_participants_from_line(line2)
