@@ -57,7 +57,9 @@ with st.expander("📋 Ver formato de entrada", expanded=False):
 st.divider()
 
 # ── Constantes de output ────────────────────────────────────────────────────
-HEADER      = "𓍯💫 ⊹ ࣪˖⁩ 𝕱𝖑𝖆𝖘𝖍 𝕱𝖚𝖌𝖆𝖟 ♡̷̷۫۫ ꕀ"
+HEADER_PREFIX = "𓍯💫 ⊹ ࣪˖⁩ "
+HEADER_SUFFIX = " ♡̷̷۫۫ ꕀ"
+DEFAULT_HEADER_TEXT = "Hunde La Estrella"
 FOOTER      = "╰─ׄ     ︶⃨︶   : 🐐 :   ︶⃨︶     ─ׄ╯"
 TOTAL_LABEL = "*`𝕋𝕆𝕋𝔸𝕃`*"
 PART_PREFIX = "ꜜ ۪۪᭝໋݊"
@@ -72,6 +74,40 @@ INVISIBLE_CODEPOINTS = {
     0x2060, 0x200B, 0xFEFF, 0x200E, 0x200F,
     0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
 }
+
+BLACKLETTER_MAP = {
+    "A": "𝕬", "B": "𝕭", "C": "𝕮", "D": "𝕯", "E": "𝕰", "F": "𝕱",
+    "G": "𝕲", "H": "𝕳", "I": "𝕴", "J": "𝕵", "K": "𝕶", "L": "𝕷",
+    "M": "𝕸", "N": "𝕹", "O": "𝕺", "P": "𝕻", "Q": "𝕼", "R": "𝕽",
+    "S": "𝕾", "T": "𝕿", "U": "𝖀", "V": "𝖁", "W": "𝖂", "X": "𝖃",
+    "Y": "𝖄", "Z": "𝖅",
+
+    "a": "𝖆", "b": "𝖇", "c": "𝖈", "d": "𝖉", "e": "𝖊", "f": "𝖋",
+    "g": "𝖌", "h": "𝖍", "i": "𝖎", "j": "𝖏", "k": "𝖐", "l": "𝖑",
+    "m": "𝖒", "n": "𝖓", "o": "𝖔", "p": "𝖕", "q": "𝖖", "r": "𝖗",
+    "s": "𝖘", "t": "𝖙", "u": "𝖚", "v": "𝖛", "w": "𝖜", "x": "𝖝",
+    "y": "𝖞", "z": "𝖟",
+}
+
+def to_blackletter(text: str) -> str:
+    """
+    Convierte texto normal a estilo blackletter.
+    Conserva espacios, números, emojis y signos.
+    Intenta respetar acentos usando normalización Unicode.
+    """
+    result = []
+    for ch in text:
+        # Separar letra base + acento, por ejemplo á -> a + ́
+        decomposed = unicodedata.normalize("NFD", ch)
+        if not decomposed:
+            result.append(ch)
+            continue
+        base = decomposed[0]
+        marks = decomposed[1:]
+        styled_base = BLACKLETTER_MAP.get(base, base)
+        recomposed = unicodedata.normalize("NFC", styled_base + marks)
+        result.append(recomposed)
+    return "".join(result)
 
 
 def to_superscript(n: int) -> str:
@@ -223,8 +259,8 @@ def strip_round_number(line: str) -> str:
     return re.sub(r"^\s*\d+\s*[\.\-\)]\s*", "", line).strip()
 
 
-def build_full_output(titulo, rondas, sorted_total):
-    lines = [HEADER]
+def build_full_output(header_text, titulo, rondas, sorted_total):
+    lines = [header_text]
     if titulo:
         lines.append(f"> {titulo}")
 
@@ -280,6 +316,13 @@ with st.expander("⚙️ Configuración de puntuación", expanded=False):
 st.divider()
 
 # ── Input ───────────────────────────────────────────────────────────────────
+header_text_input = st.text_input(
+    "Texto del header",
+    value=DEFAULT_HEADER_TEXT,
+    placeholder="Escribe el texto para el encabezado"
+)
+header_final = HEADER_PREFIX + to_blackletter(header_text_input.strip() or DEFAULT_HEADER_TEXT) + HEADER_SUFFIX
+
 raw_input = st.text_area(
     "Pega aquí el mensaje completo del flash",
     height=280,
@@ -416,6 +459,6 @@ if st.button("🧮 Contar flash", type="primary"):
     if not sorted_total:
         st.info("No se detectaron participantes en ninguna ronda.")
     else:
-        full_output = build_full_output(titulo_uso, rondas_detectadas, sorted_total)
+        full_output = build_full_output(header_final, titulo_uso, rondas_detectadas, sorted_total)
         st.code(full_output, language="text")
         st.components.v1.html(copy_button_html(full_output, "btn_output_final"), height=45)
